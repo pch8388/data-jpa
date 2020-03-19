@@ -5,11 +5,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
+import study.datajpa.dto.MemberDto;
 import study.datajpa.entity.Member;
+import study.datajpa.entity.Team;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 @SpringBootTest
 @Transactional
@@ -17,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MemberRepositoryTest {
 
     @Autowired MemberRepository memberRepository;
+    @Autowired TeamRepository teamRepository;
 
     @Test
     public void testMember() {
@@ -54,5 +59,74 @@ class MemberRepositoryTest {
 
         long deletedCount = memberRepository.count();
         assertThat(deletedCount).isEqualTo(0);
+    }
+
+    @Test
+    public void findUsername() {
+        Member member = new Member("member");
+        memberRepository.save(member);
+
+        Member findMember = memberRepository.findByUsername("member");
+
+        assertThat(findMember).isEqualTo(member);
+    }
+
+    @Test
+    public void namedQuery() {
+        Member member = new Member("member");
+        Member member1 = new Member("member1");
+        Member member2 = new Member("member2");
+        memberRepository.save(member);
+        memberRepository.save(member1);
+        memberRepository.save(member2);
+
+        List<Member> findMember = memberRepository.findUsernameInNamedQuery("member");
+        assertThat(findMember.get(0)).isEqualTo(member);
+
+        List<Member> findMember1 = memberRepository.findUsernameInNoNamedQuery("member1");
+        assertThat(findMember1.get(0)).isEqualTo(member1);
+
+        List<String> userNames = memberRepository.findUserNames();
+        assertThat(userNames.size()).isEqualTo(3);
+        assertThat(userNames).containsExactly("member", "member1", "member2");
+    }
+
+    @Test
+    public void dtoQuery() {
+        Team team1 = new Team("team1");
+        Team team2 = new Team("team2");
+        teamRepository.save(team1);
+        teamRepository.save(team2);
+
+        Member member = new Member("member");
+        Member member1 = new Member("member1");
+        Member member2 = new Member("member2");
+        member.changeTeam(team1);
+        member1.changeTeam(team1);
+        member2.changeTeam(team2);
+        memberRepository.save(member);
+        memberRepository.save(member1);
+        memberRepository.save(member2);
+
+        List<MemberDto> memberDto = memberRepository.findMemberDto();
+        assertThat(memberDto.size()).isEqualTo(3);
+        assertThat(memberDto).extracting("teamName").contains("team1", "team2");
+        assertThat(memberDto).extracting("teamName", "username")
+            .contains(tuple("team1", "member"), tuple("team1", "member1"), tuple("team2", "member2"));
+    }
+
+    @Test
+    public void findByNames() {
+        Member member = new Member("member");
+        Member member1 = new Member("member1");
+        Member member2 = new Member("member2");
+
+        memberRepository.save(member);
+        memberRepository.save(member1);
+        memberRepository.save(member2);
+
+        List<Member> members = memberRepository.findByNames(Arrays.asList("member", "member1"));
+        assertThat(members.size()).isEqualTo(2);
+        assertThat(members).extracting("username").contains("member", "member1");
     }
 }
