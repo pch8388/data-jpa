@@ -157,4 +157,31 @@ class MemberRepositoryTest {
         assertThat(members.getNumberOfElements()).isEqualTo(3);
 
     }
+
+    @Test
+    public void bulkUpdate() {
+        memberRepository.save(new Member("member1", 10));
+        memberRepository.save(new Member("member2", 20));
+        memberRepository.save(new Member("member3", 31));
+        memberRepository.save(new Member("member4", 34));
+        memberRepository.save(new Member("member5", 40));
+
+        int resultCount = memberRepository.bulkUpdateAge(30);
+        assertThat(resultCount).isEqualTo(3);
+
+        Member findMember = memberRepository.findByUsername("member3");
+        assertThat(findMember.getAge()).isEqualTo(32);
+    }
+
+    @Test
+    public void entityGraph() {
+        memberRepository.save(new Member("member1", 10));
+        memberRepository.save(new Member("member2", 20));
+        memberRepository.save(new Member("member3", 31));
+        memberRepository.save(new Member("member4", 34));
+        memberRepository.save(new Member("member5", 40));
+
+        List<Member> all = memberRepository.findAll();
+        assertThat(all.size()).isEqualTo(5);
+    }
 }
